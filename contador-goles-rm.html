@@ -18,6 +18,7 @@
         .goles-temporada { background-color: #dff0d8; }
         .verde { background-color: #dff0d8; }
     </style>
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 </head>
@@ -91,9 +92,11 @@
             let jugadores = {};
 
             function actualizarTabla() {
+              console.log('actualizarTabla');
                 let tbody = document.getElementById("tabla-jugadores");
                 tbody.innerHTML = "";
                 for (let jugador in jugadores) {
+                    console.log("Jugador en tabla:", jugador, jugadores[jugador]);
                     let fila = document.createElement("tr");
                     fila.innerHTML = `
                         <td><input type="checkbox" class="seleccionar" data-jugador="${jugador}"> ${jugador}</td>
@@ -132,43 +135,51 @@
             function crearCampoEditable(jugador, campo, esGoles = false, esTemporada = false) {
                 let claseColor = esTemporada ? 'verde' : (esGoles ? 'goles-totales' : 'partidos');
                 return `<td class="${claseColor}">
-                            <input type="number" value="${jugadores[jugador][campo]}" 
+                            <input type="number" value="${jugadores[jugador][campo] || 0}"
                                    oninput="editarValor('${jugador}', '${campo}', this.value)">
                         </td>`;
             }
 
             window.editarValor = async function(jugador, campo, valor) {
+                console.log('editarValor', jugador, campo, valor)
                 if (jugadores[jugador]) {
                     let numero = parseInt(valor) || 0;
                     if (campo.includes('Temp')) {
                         let categoria = campo.replace('Temp', '');
-                        jugadores[jugador][categoria] += (numero - jugadores[jugador][campo]);
+                        jugadores[jugador][categoria] += (numero - (jugadores[jugador][campo] || 0));
                     }
                     jugadores[jugador][campo] = numero;
                     recalcularTotales(jugador);
-                    await jugadoresCollection.doc(jugador).set(jugadores[jugador]);
+                    try {
+                      await jugadoresCollection.doc(jugador).set(jugadores[jugador]);
+                    } catch (error){
+                      console.error('Error al editar valor', error);
+                    }
                     actualizarTabla();
                 }
             }
 
             function recalcularTotales(jugador) {
-                jugadores[jugador].Total = jugadores[jugador].Liga + jugadores[jugador].Champions +
-                    jugadores[jugador].Copa + jugadores[jugador].SupercopaEspana +
-                    jugadores[jugador].Intercontinental + jugadores[jugador].SupercopaEuropa +
-                    jugadores[jugador].MundialClubes;
-                jugadores[jugador].GolesTotal = jugadores[jugador].GolesLiga + jugadores[jugador].GolesChampions +
-                    jugadores[jugador].GolesCopa + jugadores[jugador].GolesSupercopaEspana +
-                    jugadores[jugador].GolesIntercontinental + jugadores[jugador].GolesSupercopaEuropa +
-                    jugadores[jugador].GolesMundialClubes;
-                jugadores[jugador].GolesTotalTemp = jugadores[jugador].GolesLigaTemp + jugadores[jugador].GolesChampionsTemp +
-                    jugadores[jugador].GolesCopaTemp + jugadores[jugador].GolesSupercopaEspanaTemp +
-                    jugadores[jugador].GolesIntercontinentalTemp + jugadores[jugador].GolesSupercopaEuropaTemp +
-                    jugadores[jugador].GolesMundialClubesTemp;
+                console.log('recalcularTotales', jugador)
+                jugadores[jugador].Total = (jugadores[jugador].Liga || 0) + (jugadores[jugador].Champions || 0) +
+                    (jugadores[jugador].Copa || 0) + (jugadores[jugador].SupercopaEspana || 0) +
+                    (jugadores[jugador].Intercontinental || 0) + (jugadores[jugador].SupercopaEuropa || 0) +
+                    (jugadores[jugador].MundialClubes || 0);
+                jugadores[jugador].GolesTotal = (jugadores[jugador].GolesLiga || 0) + (jugadores[jugador].GolesChampions || 0) +
+                    (jugadores[jugador].GolesCopa || 0) + (jugadores[jugador].GolesSupercopaEspana || 0) +
+                    (jugadores[jugador].GolesIntercontinental || 0) + (jugadores[jugador].GolesSupercopaEuropa || 0) +
+                    (jugadores[jugador].GolesMundialClubes || 0);
+                jugadores[jugador].GolesTotalTemp = (jugadores[jugador].GolesLigaTemp || 0) + (jugadores[jugador].GolesChampionsTemp || 0) +
+                    (jugadores[jugador].GolesCopaTemp || 0) + (jugadores[jugador].GolesSupercopaEspanaTemp || 0) +
+                    (jugadores[jugador].GolesIntercontinentalTemp || 0) + (jugadores[jugador].GolesSupercopaEuropaTemp || 0) +
+                    (jugadores[jugador].GolesMundialClubesTemp || 0);
             }
 
 
             document.getElementById("agregar-jugador").addEventListener("click", async function () {
+              console.log('click agregar-jugador');
                 let nombre = document.getElementById("nombre-jugador").value;
+                console.log('nombre', nombre);
                 if (nombre && !jugadores[nombre]) {
                     const nuevoJugador = {
                         Liga: 0, Champions: 0, Copa: 0, SupercopaEspana: 0, Intercontinental: 0,
@@ -179,7 +190,12 @@
                         GolesIntercontinentalTemp: 0, GolesSupercopaEuropaTemp: 0, GolesMundialClubesTemp: 0, GolesTotalTemp: 0
                     };
 
-                    await jugadoresCollection.doc(nombre).set(nuevoJugador);
+                    try {
+                      await jugadoresCollection.doc(nombre).set(nuevoJugador);
+                      console.log('Jugador añadido', nombre);
+                    } catch (error) {
+                       console.error('Error al añadir jugador', error);
+                    }
 
                  document.getElementById("nombre-jugador").value = ""; // Limpiar el campo después de agregar
                 }
@@ -191,7 +207,7 @@
                 for (const checkbox of checkboxes) {
                     let jugador = checkbox.dataset.jugador;
                     if (jugadores[jugador]) {
-                        let valorActual = jugadores[jugador][competicion];
+                        let valorActual = jugadores[jugador][competicion] || 0;
                         await editarValor(jugador, competicion, valorActual + 1);
                     }
                 }
@@ -199,9 +215,11 @@
 
 
             jugadoresCollection.onSnapshot((snapshot) => {
+                console.log('onSnapshot');
                 jugadores = {};
                 snapshot.forEach((doc) => {
                     jugadores[doc.id] = doc.data();
+                     console.log("Datos cargados desde Firestore:", doc.id, doc.data());
                 });
                 actualizarTabla();
             });
