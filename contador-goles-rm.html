@@ -73,15 +73,18 @@
     </table>
 
     <script>
+        // Copia la configuración de tu proyecto Firebase aquí
         const firebaseConfig = {
-  apiKey: "AIzaSyDk8x1vgCGZNzMp1liG2dIYz9cDyqNfVCc",
-  authDomain: "contador-jugadores-rm.firebaseapp.com",
-  projectId: "contador-jugadores-rm",
-  storageBucket: "contador-jugadores-rm.firebasestorage.app",
-  messagingSenderId: "835384062466",
-  appId: "1:835384062466:web:6ea2f02e9cb4d4f646ed1b"
+            apiKey: "AIzaSyDk8x1vgCGZNzMp1liG2dIYz9cDyqNfVCc",
+            authDomain: "contador-jugadores-rm.firebaseapp.com",
+            projectId: "contador-jugadores-rm",
+            storageBucket: "contador-jugadores-rm.firebasestorage.app",
+            messagingSenderId: "835384062466",
+            appId: "1:835384062466:web:6ea2f02e9"
         };
-        console.log firebase.initializeApp(firebaseConfig);
+
+        // Inicializa Firebase
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const jugadoresCollection = db.collection('jugadores');
 
